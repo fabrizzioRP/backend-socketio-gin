@@ -10,10 +10,13 @@ import (
 )
 
 func main() {
-	// initialize Websocket.
-	serverSocket := sio.NewServerV4()
+	initializeServerHTTP(initializeWebSocket())
+}
 
-	serverSocket.OnConnect(func(s *sio.SocketV4) error {
+func initializeWebSocket() *sio.ServerV4 {
+	websocket := sio.NewServerV4()
+
+	websocket.OnConnect(func(s *sio.SocketV4) error {
 		log.Println("Cliente Conectado:", s.ID())
 
 		// emit
@@ -22,11 +25,14 @@ func main() {
 		return nil
 	})
 
-	serverSocket.OnDisconnect(func(s string) {
+	websocket.OnDisconnect(func(s string) {
 		log.Println("Conexion cerrada:", s)
 	})
 
-	// initialize Gin.
+	return websocket
+}
+
+func initializeServerHTTP(serverSocket *sio.ServerV4) {
 	gin.SetMode(gin.ReleaseMode)
 	serverHttp := gin.New()
 

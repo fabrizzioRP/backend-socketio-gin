@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Websocket</title>
+  <script src="https://cdn.socket.io/4.0.0/socket.io.js"></script>
+</head>
+<body>
+  <h1>Websocket</h1>
+  
+  <script>
+    const socket = io('ws://localhost:3000', {
+      transports: ['websocket'], 
+      reconnection: false,
+    });
+
+    // Cuando se establece la conexion.
+    socket.on("connect", () => {
+      console.log("server connected");
+
+      // socket.emit("joinRoom", JSON.stringify({ id: "12", projectName: "whatsapp" }))
+    });
+
+    socket.on("greeting", (msg) => console.log(msg));
+
+    // unkwon
+    socket.on("connection", (socket) => console.log("Conexión establecida con el servidor 2", socket.id));
+
+    // si hay algún error
+    socket.on("error", (error) => console.log(error));
+
+    // si el cliente se desconecta
+    socket.on("disconnect", () => console.log("Se ha desconectado"));
+
+    // intentando reconectar
+    socket.on("reconnect_attempt", () => console.log("Intentando reconectar"));
+
+    // reconectado
+    socket.on("reconnect", () => console.log("Se ha reconectado"));
+
+    // Si hay algun error de conexion.
+    socket.on("connect_error", (err) => console.log(`connect_error due to ${err.message}`));
+  </script>
+</body>
+</html>

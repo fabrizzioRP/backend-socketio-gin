@@ -14,7 +14,7 @@ import (
 
 type Client struct {
 	IdProject string
-	Project   string
+	Campana   string
 }
 
 var connectionsClient = make(map[string]Client)
@@ -53,10 +53,10 @@ func initializeWebSocket() *sio.ServerV4 {
 
 			mapData := parseDataFromClient(data)
 
-			client := Client{IdProject: mapData["id"], Project: mapData["projectName"]}
+			client := Client{IdProject: mapData["id"], Campana: mapData["campana"]}
 
 			// insert client to room.
-			if err := s.Join(client.Project); err != nil {
+			if err := s.Join(client.Campana); err != nil {
 				return fmt.Errorf("client can't join to room")
 			}
 
@@ -64,18 +64,11 @@ func initializeWebSocket() *sio.ServerV4 {
 			connectionsClient[s.ID().String()] = client
 
 			// emit message to room.
-			msgNotification := fmt.Sprintf("new client connected: %s, in campaing: %s", s.ID().String(), client.Project)
-			websocket.To(client.Project).Emit("join-notification", ser.String(msgNotification))
+			msgNotification := fmt.Sprintf("new client connected: %s, in campaing: %s", s.ID().String(), client.Campana)
+			websocket.To(client.Campana).Emit("join-notification", ser.String(msgNotification))
 
-			// Se sabe que tenemos cliente hacemos la emicion de la data externa.
-			go func() {
-				for {
-					externalData := fmt.Sprintf("External streaming-data campaing: %s || for client: %s", client.Project, s.ID().String())
-					websocket.To(client.Project).Emit("streamingData", ser.String(externalData))
-					time.Sleep(1 * time.Second)
-				}
-			}()
-
+			// start streaming-data.
+			go initStreamingData(websocket)
 			return nil
 		}))
 
@@ -89,10 +82,13 @@ func initializeWebSocket() *sio.ServerV4 {
 			}
 
 			// seteamos el room.
-			s.Leave(client.Project)
+			s.Leave(client.Campana)
 
 			// limpiamos la info del cliente.
 			connectionsClient[s.ID().String()] = Client{}
+
+			// start streaming-data.
+			go initStreamingData(websocket)
 			return nil
 		}))
 
@@ -107,6 +103,43 @@ func initializeWebSocket() *sio.ServerV4 {
 	})
 
 	return websocket
+}
+
+/**/
+func initStreamingData(ws *sio.ServerV4) {
+	for {
+		allCampaigns := getAllCampaigns()
+
+		for _, c := range allCampaigns {
+			msg := fmt.Sprintf("External streaming-data campaing: %s", c)
+			ws.To(c).Emit("streamingData", ser.String(msg))
+		}
+
+		time.Sleep(1 * time.Second)
+	}
+}
+
+/*
+Esta funcion busca en la instancia clientes conectado
+cuantas campañas hay conectadas y retorna un arreglo
+de los nombres de las campañas.
+*/
+func getAllCampaigns() []string {
+	campaignToStreaming := []string{}
+	for _, client := range connectionsClient {
+		exists := false
+		for _, c := range campaignToStreaming {
+			if c == client.Campana {
+				exists = true
+			}
+		}
+
+		if !exists {
+			campaignToStreaming = append(campaignToStreaming, client.Campana)
+		}
+	}
+
+	return campaignToStreaming
 }
 
 /*

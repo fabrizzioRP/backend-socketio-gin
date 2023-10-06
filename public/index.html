@@ -24,7 +24,7 @@
     const salaId = queryParams[0].split('=')[1]
     const salaName = queryParams[1].split('=')[1]
 
-    const credenciales = {id: salaId, projectName: salaName}
+    const credenciales = {id: salaId, campana: salaName}
 
     // socket connection.
     const socket = io('ws://localhost:3000', {

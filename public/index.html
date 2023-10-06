@@ -9,21 +9,53 @@
 <body>
   <h1>Websocket</h1>
   
+  <button id="join">Join Room</button>
+  <button id="leave">Leave Room</button>
+  <button id="disconnect">Disconnect Room</button>
+
   <script>
+    // Capturamos el button Join Room.
+    const btnJoin = document.querySelector("#join")
+    const btnLeave = document.querySelector("#leave")
+    const btnDisconnect = document.querySelector("#disconnect")
+
+    // Leemos los query paremeters id y name.
+    const queryParams = new URL(document.baseURI).search.split('?')[1].split('&')
+    const salaId = queryParams[0].split('=')[1]
+    const salaName = queryParams[1].split('=')[1]
+
+    const credenciales = {id: salaId, projectName: salaName}
+
+    // socket connection.
     const socket = io('ws://localhost:3000', {
       transports: ['websocket'], 
       reconnection: false,
     });
 
     // Cuando se establece la conexion.
-    socket.on("connect", () => {
-      console.log("server connected");
+    socket.on("connect", () => console.log("server connected"));
 
-      // socket.emit("joinRoom", JSON.stringify({ id: "12", projectName: "whatsapp" }))
-    });
+    // Click when client want to join a room.
+    btnJoin.addEventListener('click', () => {
+      console.log("joinRoom executed");
+      socket.emit("joinRoom", JSON.stringify(credenciales))
+    })
 
-    socket.on("greeting", (msg) => console.log(msg));
+    // client join notification.
+    socket.on("join-notification", (data) => console.log(data));
+    
+    // Leave room.
+    btnLeave.addEventListener('click', () => socket.emit("leaveRoom"))
 
+    // Disconnect
+    btnDisconnect.addEventListener('click', () => socket.disconnect())
+
+    // Streaming Data.
+    socket.on("streamingData", (msg) => console.log(msg));
+
+    /*
+      OTHERS DEFAULT FUNCTIONS.
+    */
     // unkwon
     socket.on("connection", (socket) => console.log("Conexión establecida con el servidor 2", socket.id));
 
